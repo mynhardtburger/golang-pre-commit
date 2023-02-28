@@ -1,0 +1,24 @@
+- id: check-go-copyright
+  name: Check copyright in go files
+  entry: copyright-check.sh go
+  files: '\.go$'
+  language: 'script'
+  description: This hook checks the copyright and fails if the copyright does not exist or is not up to date.
+- id: go-fmt
+  name: go fmt
+  entry: go-format.sh
+  files: '\.go$'
+  language: 'script'
+  description: Runs `gofmt`, requires golang.
+- id: go-vet
+  name: go vet
+  entry: go-vet.sh
+  files: '\.go$'
+  language: 'script'
+  description: Runs `go vet`, requires golang.
+- id: go-lint
+  name: golint
+  entry: go-lint.sh
+  files: '\.go$'
+  language: 'script'
+  description: Runs `go lint`, requires golang.
