@@ -85,6 +85,10 @@ for filename in ${FILES}; do
         if [ -z "${copyrightYear}" ]; then
           echo "Copyright missing from $filename"
         else
+          # do this so that we get a date for copyrightYearCreate because in the case of a single year in the copyright then this is not set
+          if [[ "${copyrightYearCreate}" == "" ]]; then
+            copyrightYearCreate = "${copyrightYear}"
+          fi
           echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
           echo "Committed: ${commitDate} and written as ${copyrightYear}. Created: ${creationDate} and written as ${copyrightYearCreate}"
         fi
