@@ -70,10 +70,15 @@ for filename in ${FILES}; do
     # echo "Copyright year: ${copyrightYear}"
 
     # if on Travis then get the last committed date from git
-    if [[ -z "$TRAVIS" ]]; then
+    #if [[ -z "$TRAVIS" ]]; then
       creationDate=$(git log --follow --format="%cd" --date=short -- $filename | tail -1)
+      if [[ "$creationDate" == "" ]]; then
+        echo -e "${RED}Failed to find creation date for: ${filename}${NC}" >&2
+      else
+        echo "Found creation date ${creationDate} for ${filename}"
+      fi
       creationYear=${creationDate%%-*}
-    fi
+    #fi
 
     newCopyrightDates=$currentYear
     if [[ "$commitYear" != "$creationYear" ]]; then
