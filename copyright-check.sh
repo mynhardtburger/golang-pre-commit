@@ -55,7 +55,8 @@ function should_check() {
 }
 
 function creation_date() {
-  local creationDate=$(git log --follow --format="%cd" --date=short -- $1 | tail -1)
+  # local creationDate=$(git log --follow --format="%cd" --date=short -- $1 | tail -1)
+  local creationDate=$(git -c pager.log=false log --diff-filter=A --follow --format=%ad -1 --date=short -- $1)
   echo $creationDate
 }
 
