@@ -74,6 +74,8 @@ for filename in ${FILES}; do
       creationDate=$(git log --follow --format="%cd" --date=short -- $filename | tail -1)
       if [[ "$creationDate" == "" ]]; then
         echo -e "${RED}Failed to find creation date for: ${filename}${NC}" >&2
+        # this can happen for new files so make the date today
+        creationDate=${commitDate}
       else
         echo "Found creation date ${creationDate} for ${filename}"
       fi
