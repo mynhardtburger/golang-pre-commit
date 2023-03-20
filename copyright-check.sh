@@ -34,7 +34,7 @@ NC='\033[0m'
 
 # git fetch --unshallow &> /dev/null
 
-currentYear=$(date +'%Y')
+commitYear=$(date +'%Y')
 
 declare -a fileextensions=("${FILE_EXT}") # ("go")
 
@@ -54,73 +54,77 @@ function shouldCheck() {
   return 1
 }
 
-# just check the files that are modified
-for filename in ${FILES}; do
-  # echo -e "Checking file $filename"
-  shouldCheck "$filename"
-  if [[ $? -eq 0 ]]; then
-    # we use the current year as the commit date because we are committing now
-    # commitDate=$(git log -1 --format="%cd" --date=short -- $filename)
-    commitDate=$(date +%Y-%m-%d)
-    commitYear=${commitDate%%-*}
-    # echo "Commit year: ${commitYear}"
+failed=false
 
-    copyrightYear=$(cat $filename | grep -m1 "Copyright IBM" | sed -En "s/.*Copyright IBM Corp\. ([0-9]+, ){0,1}([0-9]+)\. All Rights Reserved..*$/\2/p")
+function checkFile() {
+  local filename=$1
+
+  # we use the current year as the commit date because we are committing now
+  # commitDate=$(git log -1 --format="%cd" --date=short -- $filename)
+  # commitYear=${commitDate%%-*}
+
+  copyrightYear=$(cat $filename | grep -m1 "Copyright IBM" | sed -En "s/.*Copyright IBM Corp\. ([0-9]+, ){0,1}([0-9]+)\. All Rights Reserved..*$/\2/p")
+  if [ -z "${copyrightYear}" ]; then
+    echo -e "${RED}Copyright missing in ${filename}${NC}" >&2
+    # no need to do anything else
+    failed=true
+  else
     copyrightYearCreate=$(cat $filename | grep -m1 "Copyright IBM" | sed -En "s/.*Copyright IBM Corp\. (([0-9]+), ){0,1}([0-9]+)\. All Rights Reserved..*$/\2/p")
-    # echo "Copyright year: ${copyrightYear}"
+    if [ -z "${copyrightYearCreate}" ]; then
+      # we can create and then update in the same year
+      copyrightYearCreate=$copyrightYear
+    else
+      # these should not be the same
+      if [[ "${copyrightYear}" == "${copyrightYearCreate}" ]]; then
+        echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
+        echo "Created date: ${copyrightYearCreate} should not be the same as the commited date: ${copyrightYear}"
+        failed=true
+      fi
+    fi
+  fi
 
+  if [[ ! "$failed" ]]; then
+    newfile=false
+
+    # get the file creation date from git
     creationDate=$(git log --follow --format="%cd" --date=short -- $filename | tail -1)
     if [[ "$creationDate" == "" ]]; then
       # echo -e "${RED}Failed to find creation date for: ${filename}${NC}" >&2
       # this can happen for new files so make the date today
+      newfile=true
       creationDate=${commitDate}
       echo "Set creation date ${creationDate} for ${filename}"
-      if [[ "$copyrightYearCreate" == "" ]]; then
-        copyrightYearCreate=${commitDate}
-      fi
     else
       echo "Found creation date ${creationDate} for ${filename}"
     fi
     creationYear=${creationDate%%-*}
 
-    newCopyrightDates=$currentYear
-    if [[ "$commitYear" != "$creationYear" ]]; then
-      newCopyrightDates="$creationYear, $currentYear"
-    fi
-
-    if [[ "$commitYear" != "$creationYear" ]]; then
-      if [[ "$copyrightYearCreate" != "$creationYear" || "$copyrightYear" != "$commitYear" ]]; then
-        if [ -z "${copyrightYear}" ]; then
-          echo "Copyright missing from $filename"
-        else
-          # do this so that we get a date for copyrightYearCreate because in the case of a single year in the copyright then this is not set
-          if [[ "${copyrightYearCreate}" == "" ]]; then
-            copyrightYearCreate="${copyrightYear}"
-          fi
-          echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
-          echo "Committed: ${commitDate} and written as ${copyrightYear}. Created: ${creationDate} and written as ${copyrightYearCreate}"
-        fi
-        fail=true
-      fi
+    if [[ "$commitYear" != "$copyrightYear" ]]; then
+      echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
+      echo "Committed: ${commitYear} and written as ${copyrightYear}. Created: ${creationDate} and written as ${copyrightYearCreate}"
+      failed=true
     else
-      if [[ "$commitYear" != "$copyrightYear" || "$copyrightYearCreate" ]]; then
-        echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
-        echo "Committed: ${commitDate} and written as ${copyrightYear}."
-        if [[ ! -z "$creationDate" ]]; then
-          if [[ ! -z "$copyrightYearCreate" ]]; then
-            echo "Created: ${creationDate} and written as ${copyrightYearCreate}"
-          else
-            echo "Created: ${creationDate} and missing from file"
-          fi
+      if [[ ! "${newfile}" ]]; then
+        if [[ "$creationYear" != "$copyrightYearCreate" ]]; then
+          echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
+          echo "Committed: ${commitYear} and written as ${copyrightYear}. Created: ${creationDate} and written as ${copyrightYearCreate}"
+          failed=true
         fi
-        fail=true
       fi
     fi
   fi
+}
+
+# just check the files that are modified
+for filename in ${FILES}; do
+  # echo -e "Checking file $filename"
+  shouldCheck "$filename"
+  if [[ $? -eq 0 ]]; then
+    checkFile "$filename"
+  fi
 done
 
-if [[ "$fail" ]]; then
-  # echo -e "\n${RED}Correct copyrights with '--fix' parameter${NC}"
+if [[ "$failed" ]]; then
   echo -e "\n${RED}Correct copyrights${NC}"
   exit 1
 else
