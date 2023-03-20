@@ -69,18 +69,19 @@ for filename in ${FILES}; do
     copyrightYearCreate=$(cat $filename | grep -m1 "Copyright IBM" | sed -En "s/.*Copyright IBM Corp\. (([0-9]+), ){0,1}([0-9]+)\. All Rights Reserved..*$/\2/p")
     # echo "Copyright year: ${copyrightYear}"
 
-    # if on Travis then get the last committed date from git
-    #if [[ -z "$TRAVIS" ]]; then
-      creationDate=$(git log --follow --format="%cd" --date=short -- $filename | tail -1)
-      if [[ "$creationDate" == "" ]]; then
-        echo -e "${RED}Failed to find creation date for: ${filename}${NC}" >&2
-        # this can happen for new files so make the date today
-        creationDate=${commitDate}
-      else
-        echo "Found creation date ${creationDate} for ${filename}"
+    creationDate=$(git log --follow --format="%cd" --date=short -- $filename | tail -1)
+    if [[ "$creationDate" == "" ]]; then
+      # echo -e "${RED}Failed to find creation date for: ${filename}${NC}" >&2
+      # this can happen for new files so make the date today
+      creationDate=${commitDate}
+      echo "Set creation date ${creationDate} for ${filename}"
+      if [[ "$copyrightYearCreate" == "" ]]; then
+        copyrightYearCreate=${commitDate}
       fi
-      creationYear=${creationDate%%-*}
-    #fi
+    else
+      echo "Found creation date ${creationDate} for ${filename}"
+    fi
+    creationYear=${creationDate%%-*}
 
     newCopyrightDates=$currentYear
     if [[ "$commitYear" != "$creationYear" ]]; then
