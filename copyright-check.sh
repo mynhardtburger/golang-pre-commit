@@ -54,7 +54,7 @@ function shouldCheck() {
   return 1
 }
 
-fail=false
+fail="false"
 
 # just check the files that are modified
 for filename in ${FILES}; do
@@ -69,7 +69,7 @@ for filename in ${FILES}; do
     if [ -z "${copyrightYear}" ]; then
       echo -e "${RED}Copyright missing in ${filename}${NC}" >&2
       # no need to do anything else
-      fail=true
+      fail="true"
     else
       copyrightYearCreate=$(cat $filename | grep -m1 "Copyright IBM" | sed -En "s/.*Copyright IBM Corp\. (([0-9]+), ){0,1}([0-9]+)\. All Rights Reserved..*$/\2/p")
       if [ -z "${copyrightYearCreate}" ]; then
@@ -80,20 +80,20 @@ for filename in ${FILES}; do
         if [[ "${copyrightYear}" == "${copyrightYearCreate}" ]]; then
           echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
           echo "Created date: ${copyrightYearCreate} should not be the same as the commited date: ${copyrightYear}"
-          fail=true
+          fail="true"
         fi
       fi
     fi
 
-    if [[ ! "$fail" ]]; then
-      newfile=false
+    if [[ "$fail" == "false" ]]; then
+      newfile="false"
 
       # get the file creation date from git
       creationDate=$(git log --follow --format="%cd" --date=short -- $filename | tail -1)
       if [[ "$creationDate" == "" ]]; then
         # echo -e "${RED}Failed to find creation date for: ${filename}${NC}" >&2
         # this can happen for new files so make the date today
-        newfile=true
+        newfile="true"
         creationDate=${commitDate}
         echo "Set creation date ${creationDate} for ${filename}"
       else
@@ -104,13 +104,13 @@ for filename in ${FILES}; do
       if [[ "$commitYear" != "$copyrightYear" ]]; then
         echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
         echo "Committed: ${commitYear} and written as ${copyrightYear}. Created: ${creationDate} and written as ${copyrightYearCreate}"
-        fail=true
+        fail="true"
       else
-        if [[ ! "${newfile}" ]]; then
+        if [[ "${newfile}" == "false" ]]; then
           if [[ "$creationYear" != "$copyrightYearCreate" ]]; then
             echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
             echo "Committed: ${commitYear} and written as ${copyrightYear}. Created: ${creationDate} and written as ${copyrightYearCreate}"
-            fail=true
+            fail="true"
           fi
         fi
       fi
@@ -118,7 +118,7 @@ for filename in ${FILES}; do
   fi
 done
 
-if [[ "$fail" ]]; then
+if [[ "$fail" == "true" ]]; then
   echo -e "\n${RED}Correct copyrights${NC}"
   exit 1
 else
