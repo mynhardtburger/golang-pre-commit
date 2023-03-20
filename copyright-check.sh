@@ -46,7 +46,7 @@ declare -a fileextensions=("${FILE_EXT}") # ("go")
 # echo "Ignored files: "
 # for e in "${ignore[@]}"; do echo "    - $e"; done
 
-function shouldCheck() {
+function should_check() {
   local filename=$(basename "$1")
   local fileExtension="${filename##*.}"
   # for e in "${ignore[@]}"; do [[ "$1" =~ $e && "$e" != "" ]] && return 1; done
@@ -54,12 +54,17 @@ function shouldCheck() {
   return 1
 }
 
+function creation_date() {
+  local creationDate=$(git log --follow --format="%cd" --date=short -- $1 | tail -1)
+  echo $creationDate
+}
+
 fail="false"
 
 # just check the files that are modified
 for filename in ${FILES}; do
   # echo -e "Checking file $filename"
-  shouldCheck "$filename"
+  should_check "$filename"
   if [[ $? -eq 0 ]]; then
     # we use the current year as the commit date because we are committing now
     # commitDate=$(git log -1 --format="%cd" --date=short -- $filename)
@@ -89,7 +94,7 @@ for filename in ${FILES}; do
       newfile="false"
 
       # get the file creation date from git
-      creationDate=$(git log --follow --format="%cd" --date=short -- $filename | tail -1)
+      creationDate=$(creation_date $filename)
       if [[ "$creationDate" == "" ]]; then
         # echo -e "${RED}Failed to find creation date for: ${filename}${NC}" >&2
         # this can happen for new files so make the date today
@@ -122,5 +127,5 @@ if [[ "$fail" == "true" ]]; then
   echo -e "\n${RED}Correct copyrights${NC}"
   exit 1
 else
-  echo -e "${GREEN}Copyright up to date :)${NC}"
+  echo -e "${GREEN}Copyright up to date :-)${NC}"
 fi
