@@ -54,10 +54,24 @@ function should_check() {
   return 1
 }
 
-function creation_date() {
-  # local creationDate=$(git log --follow --format="%cd" --date=short -- $1 | tail -1)
-  local creationDate=$(git -c pager.log=false log --diff-filter=A --follow --format=%ad -1 --date=short -- $1)
+# we need to get the first creation date so that it works across branches and PRs
+function first_creation_date() {
+  local creationDate=$(git log --follow --format="%cd" --date=short -- $1 | tail -1)
+  # local creationDate=$(git -c pager.log=false log --diff-filter=A --follow --format=%ad -1 --date=short -- $1)
+  # local creationDate=$(git log --diff-filter=A --follow --format=%ad --date=short -- $1) # | head -1)
   echo $creationDate
+}
+
+function get_creation_year() {
+  # get the file creation date from git if not running in Travis
+  if [[ -z "$TRAVIS" ]]; then
+    local creationDate=$(first_creation_date $1)
+    # echo "Got creation date $creationDate for file $1"
+    echo ${creationDate%%-*}
+  else
+    # echo "Using creation date $copyrightYearCreate read from file $1"
+    echo $2
+  fi
 }
 
 fail="false"
@@ -92,32 +106,17 @@ for filename in ${FILES}; do
     fi
 
     if [[ "$fail" == "false" ]]; then
-      newfile="false"
-
-      # get the file creation date from git
-      creationDate=$(creation_date $filename)
-      if [[ "$creationDate" == "" ]]; then
-        # echo -e "${RED}Failed to find creation date for: ${filename}${NC}" >&2
-        # this can happen for new files so make the date today
-        newfile="true"
-        creationDate=${commitDate}
-        echo "Set creation date ${creationDate} for ${filename}"
-      else
-        echo "Found creation date ${creationDate} for ${filename}"
-      fi
-      creationYear=${creationDate%%-*}
+      creationYear=$(get_creation_year $filename $copyrightYearCreate)
 
       if [[ "$commitYear" != "$copyrightYear" ]]; then
         echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
         echo "Committed: ${commitYear} and written as ${copyrightYear}. Created: ${creationDate} and written as ${copyrightYearCreate}"
         fail="true"
       else
-        if [[ "${newfile}" == "false" ]]; then
-          if [[ "$creationYear" != "$copyrightYearCreate" ]]; then
-            echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
-            echo "Committed: ${commitYear} and written as ${copyrightYear}. Created: ${creationDate} and written as ${copyrightYearCreate}"
-            fail="true"
-          fi
+        if [[ "$creationYear" != "$copyrightYearCreate" ]]; then
+          echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
+          echo "Committed: ${commitYear} and written as ${copyrightYear}. Created: ${creationDate} and written as ${copyrightYearCreate}"
+          fail="true"
         fi
       fi
     fi
