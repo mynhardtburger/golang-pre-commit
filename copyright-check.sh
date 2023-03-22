@@ -107,15 +107,17 @@ for filename in ${FILES}; do
 
     if [[ "$fail" == "false" ]]; then
       creationYear=$(get_creation_year $filename $copyrightYearCreate)
-
+      if [[ "$creationYear" == "" ]]; then
+        creationYear=$commitYear
+      fi
       if [[ "$commitYear" != "$copyrightYear" ]]; then
         echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
-        echo "Committed: ${commitYear} and written as ${copyrightYear}. Created: ${creationDate} and written as ${copyrightYearCreate}"
+        echo "Committed: ${commitYear} and written as ${copyrightYear}. Created: ${creationYear} and written as ${copyrightYearCreate}"
         fail="true"
       else
         if [[ "$creationYear" != "$copyrightYearCreate" ]]; then
           echo -e "${RED}Copyright needs to be updated for: ${filename}${NC}" >&2
-          echo "Committed: ${commitYear} and written as ${copyrightYear}. Created: ${creationDate} and written as ${copyrightYearCreate}"
+          echo "Committed: ${commitYear} and written as ${copyrightYear}. Created: ${creationYear} and written as ${copyrightYearCreate}"
           fail="true"
         fi
       fi
