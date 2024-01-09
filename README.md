@@ -38,3 +38,12 @@ The following are some examples:
 ## golang ids
 
    1. `go-fmt` - this will run `go fmt` on all the go files.
+
+## golines
+
+This will use [golines](https://github.com/segmentio/golines) to format files for maximum line length.
+
+In the `args` section you can specifiy options such as `--max-len=120 --tab-len=2`.
+
+Note that the hook will try to install `golines` as for now the golang support
+in `pre-commit` does not support [additional_dependencies](https://pre-commit.com/#golang).

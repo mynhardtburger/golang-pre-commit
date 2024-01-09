@@ -28,3 +28,9 @@
   files: '\.go$'
   language: 'script'
   description: Runs `go lint`, requires golang.
+- id: golines
+  name: golines
+  entry: golines.sh
+  files: '\.go$'
+  language: 'script'
+  description: Runs `golines`, requires golang and will install golines.
